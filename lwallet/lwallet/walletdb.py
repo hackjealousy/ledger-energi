@@ -44,7 +44,7 @@ def locked_result(l):
 
 # ----*----*----*----*----*----*----*----*----*----*----*----*----*----*
 
-def islocked_txid(txid, nout):
+def is_locked_txid(txid, nout):
     with db_get_con() as con:
         cur = con.cursor()
         cur.execute('SELECT * FROM locked WHERE txid = ? AND nout = ?', (txid, nout))

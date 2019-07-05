@@ -39,7 +39,7 @@ def main():
     for a in addr_d:
         nul = []
         for u in addr_d[a].get('utxos', []):
-            if not walletdb.is_locked_txid(u['txid'], u['nout'])
+            if not walletdb.is_locked_txid(u['txid'], u['nout']):
                 nul.append(u)
             else:
                 print('removing locked: %s' % u)

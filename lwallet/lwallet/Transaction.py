@@ -6,7 +6,7 @@ import secp256k1
 import struct
 
 from coinapi import eelocal as eel
-from lwallet import address, energi, script, serialize, sign, walletdb
+from lwallet import address, energi, script, serialize, walletdb
 from lwallet.serialize import ser_string, deser_string, ser_vector, deser_vector, b2hs, hs2b
 
 # ----*----*----*----*----*----*----*----*----*----*----*----*----*----*
