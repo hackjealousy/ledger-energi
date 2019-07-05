@@ -9,7 +9,8 @@ def get_address_at(index):
     sys.stdout.write('Getting address from ledger...  '); sys.stdout.flush()
     ae = address.get_address(ae, display = True)
     print('\nAddress: %(address)s (path: %(path)s)' % ae)
-    walletdb.put_address_db(*ae)
+    walletdb.put_address_db(ae['address'], pubkey = ae['public_key'], pkh = energi.hash160(energi.compress_public_key(ae['public_key'])),
+      account = ae['account'], index = ae['index'], change = ae['change'])
     return ae
 
 def get_next_unused():

@@ -71,7 +71,7 @@ def get_all_locked():
         cur.execute('SELECT * FROM locked')
         return locked_result(cur.fetchall())
 
-def put_address_db(address, pubkey = b'', pkh = b'', watchonly = 1, ismasternode = 0, account = 0, index = 0, change = 0, *parg):
+def put_address_db(address, pubkey = b'', pkh = b'', watchonly = 1, ismasternode = 0, account = 0, index = 0, change = 0):
     with db_get_con() as con:
         cur = con.cursor()
         cur.execute('INSERT INTO wallet VALUES(?, ?, ?, ?, ?, ?, ?, ?)', (address, pubkey, pkh, watchonly, ismasternode, account, index, change))
@@ -149,7 +149,7 @@ def rescan(threshold = 1):
     nuke_wallet_db()
     nuke_unspent_db()
 
-    addr_d = address.get_address_d()
+    addr_d = address.get_address_d(verbose = True)
     for a in addr_d:
         if a == 'change':
             continue
@@ -195,18 +195,22 @@ def get_addr_txid(txid, nout):
 def _update_address_d(addr_d):
     max_index = -1
     k = addr_d.keys()
+    print(k)
     for addr in k:
-        if addr_d[addr]['index'] > max_index:
-            max_index = addr_d[addr]['index']
-        if addr == 'change':
-            utxos = eel.get_unspent([addr_d['change']['address']])
-            if len(utxos) > 0:
-                addr_d['change']['utxos'] = utxos
-                addr_d[addr_d['change']['address']] = addr_d['change']
-                del addr_d['change']
-        else:
+        if addr != 'change':
+            print(addr)
             addr_d[addr]['utxos'] = eel.get_unspent(addr)
-    if 'change' not in addr_d:
+            if int(addr_d[addr]['index']) > max_index:
+                max_index = int(addr_d[addr]['index'])
+
+    if 'change' in addr_d:
+        caddr = addr_d['change']['address']
+        utxos = eel.get_unspent(caddr)
+        if len(utxos) > 0:
+            addr_d['change']['utxos'] = utxos
+            addr_d[addr] = addr_d['change']
+            addr_d['change'] = address.get_next_change(for_index = max_index)
+    else:
         addr_d['change'] = address.get_next_change(for_index = max_index)
     return addr_d
 
