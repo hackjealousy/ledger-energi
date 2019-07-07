@@ -195,10 +195,8 @@ def get_addr_txid(txid, nout):
 def _update_address_d(addr_d):
     max_index = -1
     k = addr_d.keys()
-    print(k)
     for addr in k:
         if addr != 'change':
-            print(addr)
             addr_d[addr]['utxos'] = eel.get_unspent(addr)
             if int(addr_d[addr]['index']) > max_index:
                 max_index = int(addr_d[addr]['index'])
@@ -211,7 +209,10 @@ def _update_address_d(addr_d):
             addr_d[addr] = addr_d['change']
             addr_d['change'] = address.get_next_change(for_index = max_index)
     else:
-        addr_d['change'] = address.get_next_change(for_index = max_index)
+        try:
+            addr_d['change'] = address.get_next_change(for_index = max_index)
+        except:
+            pass
     return addr_d
 
 def updatedb():

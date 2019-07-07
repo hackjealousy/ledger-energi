@@ -6,10 +6,11 @@ from lwallet import address, energi, serialize, walletdb
 
 def get_address_at(index):
     ae = energi.create_pathd(index = index)
-    sys.stdout.write('Getting address from ledger...  '); sys.stdout.flush()
+    sys.stdout.write('Displaying address on ledger...  '); sys.stdout.flush()
     ae = address.get_address(ae, display = True)
     print('\nAddress: %(address)s (path: %(path)s)' % ae)
-    walletdb.put_address_db(ae['address'], pubkey = ae['public_key'], pkh = energi.hash160(energi.compress_public_key(ae['public_key'])),
+    walletdb.put_address_db(ae['address'], pubkey = ae['public_key'],
+      pkh = energi.hash160(energi.compress_public_key(ae['public_key'])),
       account = ae['account'], index = ae['index'], change = ae['change'])
     return ae
 
