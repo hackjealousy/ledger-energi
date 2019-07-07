@@ -42,17 +42,32 @@ check for the latest unspent transactions to your addresses.
     $ updatedb.py
 ```
 
-Now you can send.
+Now you can send.  Plug in your Ledger and start the Bitcoin
+application.
 
 ```bash
     $ send_nrg.py <address> <amount in sats>
 ```
 
-If you want to send _all_ unspent transactions to the address, use a
-negative amount of sats.
+If you want to send _all_ coins off the Ledger, use a negative amount of
+sats.
 
 ```bash
     $ send_nrg.py <address> -1
 ```
 
+Signing Masternode Broadcast messages:
 
+I had to add another command to the Bitcoin application to understand
+Masternode Broadcast messages as sent by Energi.  You need to compile
+the program under ledger-app-energi with the development environment
+given here
+https://ledger.readthedocs.io/en/latest/userspace/getting_started.html.
+
+Uninstall the default Bitcoin application and install this one.
+
+Then just
+
+```bash
+    $ mnb.py <location of masternode.conf file>
+```
