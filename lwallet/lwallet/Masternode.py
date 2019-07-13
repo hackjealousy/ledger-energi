@@ -12,24 +12,6 @@ _PROTOCOL_VERSION = 70212
 
 #----#----#----#----#----#----#----#----#----#----#----#----#----#----#----#
 
-def gen_private_key():
-    while True:
-        with open('/dev/urandom', 'rb') as f:
-            rand = f.read(32)
-        try:
-            private_key = secp256k1.PrivateKey(privkey = rand, raw = True)
-            return energi.address_repr(rand, b'\x02')
-        except:
-            pass
-
-def decode_private_key(addr58):
-    privkey, vers = energi.decode_address(addr58, True)
-    if vers != 2:
-        raise RuntimeError('bad encoding on private key: %d' % vers)
-    return privkey
-
-#----#----#----#----#----#----#----#----#----#----#----#----#----#----#----#
-
 def get_block_hash(n = 12):
     return serialize.hs2b(eel.get_blockhash(eel.get_blockcount() - n))
 
