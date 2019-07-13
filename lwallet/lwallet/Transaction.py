@@ -6,7 +6,7 @@ import secp256k1
 import struct
 
 from coinapi import eelocal as eel
-from lwallet import address, energi, script, serialize, walletdb
+from lwallet import address, energi, ledger, script, serialize, walletdb
 from lwallet.serialize import ser_string, deser_string, ser_vector, deser_vector, b2hs, hs2b
 
 # ----*----*----*----*----*----*----*----*----*----*----*----*----*----*
@@ -136,7 +136,7 @@ def signature_hash(script_code, txto, inIdx, hashtype):
     if inIdx >= len(txto.vin):
         raise RuntimeError('input index out of range (%d >= %d)' % (i, len(txto.vin)))
 
-    txtmp = Transaction.CTransaction(txto)
+    txtmp = CTransaction(txto)
 
     for i in range(len(txtmp.vin)):
         if i != inIdx:
@@ -170,10 +170,10 @@ def signature_hash(script_code, txto, inIdx, hashtype):
     s = txtmp.serialize()
     s += struct.pack(b'<I', hashtype)
 
-    return Transaction.hash256(s)
+    return hash256(s)
 
 def verify_tx(tx_in, prevout_d = {}):
-    tx = Transaction.CTransaction(tx_in)
+    tx = CTransaction(tx_in)
 
     if len(tx.vin) == 0:
         return False
@@ -199,7 +199,7 @@ def verify_tx(tx_in, prevout_d = {}):
 
         # get the transaction from prevout dictionary or energid if not provided
         tx_i_hex = prevout_d[txid]['hex'] if txid in prevout_d else eel.get_hex_transaction(txid)
-        tx_i = Transaction.CTransaction().deserialize(BytesIO(serialize.hs2b(tx_i_hex)))
+        tx_i = CTransaction().deserialize(BytesIO(serialize.hs2b(tx_i_hex)))
 
         n = tx.vin[i].prevout.n
         vout = tx_i.vout[n]
@@ -231,7 +231,7 @@ def verify_tx(tx_in, prevout_d = {}):
     return True
 
 def sign_tx(tx_in, address_d, change_path = None, txid_d = None):
-    tx = Transaction.CTransaction(tx_in)
+    tx = CTransaction(tx_in)
 
     # First, we need a trusted input blob for each vin[i].
     til = []
@@ -247,7 +247,7 @@ def sign_tx(tx_in, address_d, change_path = None, txid_d = None):
 
         # get the transaction from energid
         tx_i_hex = eel.get_hex_transaction(txid_hs) if txid_d is None else txid_d[txid_hs]['hex']
-        tx_i = Transaction.CTransaction().deserialize(BytesIO(serialize.hs2b(tx_i_hex)))
+        tx_i = CTransaction().deserialize(BytesIO(serialize.hs2b(tx_i_hex)))
 
         # save scriptPubKey for later
         d['scriptPubKey'] = tx_i.vout[n].scriptPubKey
@@ -290,7 +290,7 @@ def sign_tx(tx_in, address_d, change_path = None, txid_d = None):
     # Second, we need a signature to put in each vin[i].scriptSig.
     sigs = []
     for i in range(len(tx.vin)):
-        tx_i = Transaction.CTransaction(tx)
+        tx_i = CTransaction(tx)
         for v in tx_i.vin:
             v.scriptSig = b''
         tx_i.vin[i].scriptSig = til[i]['scriptPubKey']
@@ -363,13 +363,20 @@ def create_tx(address_to, value_sats, addr_d):
 
     _NRGSAT = 10**8
 
+    # extract utxos from addr_d (not from the change address though)
     utxol = []
     for a in addr_d:
-        if 'utxos' in addr_d[a]:
-            utxol += addr_d[a]['utxos']
+        if 'change' != a and 'utxos' in addr_d[a]:
+            for u in addr_d[a]['utxos']:
+                if not walletdb.is_locked_txid(u['txid'], u['nout']):
+                    utxol.append(u)
 
-    # transfer amounts
-    fee_amt = int(eel.get_fee_estimate() * _NRGSAT)
+    # calculate transfer amounts
+    fee_est = eel.get_fee_estimate() * _NRGSAT
+    if fee_est < 0:
+        print('WARNING: fee estimate was negative')
+        fee_est = 1000.0
+    fee_amt = int(fee_est) # assuming 1kB
     balance = sum([u['satoshis'] for u in utxol])
     send_amt = value_sats if value_sats is not None else balance - fee_amt
 
@@ -377,33 +384,32 @@ def create_tx(address_to, value_sats, addr_d):
     amt = 0
     ul = []
     for u in utxol:
-        if not walletdb.is_locked_txid(u['txid'], u['nout']):
-            ul.append(u)
-            amt += u['satoshis']
-            if amt >= send_amt + fee_amt: # estimating 1kB tx
-                break
+        ul.append(u)
+        amt += u['satoshis']
+        if amt >= send_amt + fee_amt: # assuming 1kB tx
+            break
 
     if amt < send_amt + fee_amt:
         raise RuntimeError('error: wallet balance insufficient: %d' % amt)
 
     # build transaction
-    tx = Transaction.CTransaction()
+    tx = CTransaction()
     tx.vin = []
     for u in ul:
         h = serialize.hs2b(u['txid'])
-        op = Transaction.COutPoint(h, u['nout'])
-        tx.vin.append(Transaction.CTxIn(outpoint = op, nSequence = 2**32 - 1))
+        op = COutPoint(h, u['nout'])
+        tx.vin.append(CTxIn(outpoint = op, nSequence = 2**32 - 1))
 
     # randomize input order (somewhat)
     random.shuffle(tx.vin)
 
-    txout = Transaction.CTxOut(send_amt, script.standard_p2pkh_pkh(energi.decode_address(address_to)))
+    txout = CTxOut(send_amt, script.standard_p2pkh_pkh(energi.decode_address(address_to)))
     tx.vout = [txout]
 
     change_path = None
     if send_amt + fee_amt < amt:
         change_pubkey = energi.compress_public_key(addr_d['change']['public_key'])
-        change_out = Transaction.CTxOut(amt - (send_amt + fee_amt), script.standard_p2pkh(change_pubkey))
+        change_out = CTxOut(amt - (send_amt + fee_amt), script.standard_p2pkh(change_pubkey))
         tx.vout.append(change_out)
         change_path = energi.serialize_pathd(addr_d['change'])
 
