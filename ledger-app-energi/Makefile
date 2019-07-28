@@ -31,7 +31,7 @@ APPVERSION_P=10
 APPVERSION=$(APPVERSION_M).$(APPVERSION_N).$(APPVERSION_P)
 APP_LOAD_FLAGS=--appFlags 0x250 --dep Bitcoin:$(APPVERSION)
 
-COIN=energi
+#COIN=energi
 
 # simplify for tests
 ifndef COIN

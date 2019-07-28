@@ -6,7 +6,7 @@ import secp256k1
 import struct
 
 from coinapi import eelocal as eel
-from lwallet import address, energi, ledger, script, serialize, walletdb
+from lwallet import address, energi, ledger, script, serialize
 from lwallet.serialize import ser_string, deser_string, ser_vector, deser_vector, b2hs, hs2b
 
 # ----*----*----*----*----*----*----*----*----*----*----*----*----*----*
@@ -359,8 +359,8 @@ def sign_tx(tx_in, address_d, change_path = None, txid_d = None):
 
     return tx
 
-def create_tx(address_to, value_sats, addr_d):
-
+def create_tx(address_to, value_sats, addr_d, fee_minimum = 0):
+    # fee_minimum is in Sats
     _NRGSAT = 10**8
 
     # extract utxos from addr_d (not from the change address though)
@@ -368,15 +368,13 @@ def create_tx(address_to, value_sats, addr_d):
     for a in addr_d:
         if 'change' != a and 'utxos' in addr_d[a]:
             for u in addr_d[a]['utxos']:
-                if not walletdb.is_locked_txid(u['txid'], u['nout']):
-                    utxol.append(u)
+                utxol.append(u)
 
     # calculate transfer amounts
     fee_est = eel.get_fee_estimate() * _NRGSAT
-    if fee_est < 0:
-        print('WARNING: fee estimate was negative')
-        fee_est = 1000.0
-    fee_amt = int(fee_est) # assuming 1kB
+    if fee_est < fee_minimum:
+        fee_est = fee_minimum
+    fee_amt = int(fee_est)
     balance = sum([u['satoshis'] for u in utxol])
     send_amt = value_sats if value_sats is not None else balance - fee_amt
 
