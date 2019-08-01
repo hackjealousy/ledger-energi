@@ -55,6 +55,8 @@ sats.
     $ send_nrg.py <address> -1
 ```
 
+---
+
 Signing Masternode Broadcast messages:
 
 I had to add another command to the Bitcoin application to understand
