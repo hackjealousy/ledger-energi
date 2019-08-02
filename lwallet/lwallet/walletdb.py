@@ -54,6 +54,12 @@ def lock_txid(txid, nout):
     if islocked_txid(txid, nout):
         return
 
+    if not isinstance(nout, int):
+        raise RuntimeError('nout should be int')
+
+    if len(txid) != 64:
+        raise RuntimeError('txid should be a 32-byte string')
+
     with db_get_con() as con:
         cur = con.cursor()
         cur.execute('INSERT INTO locked VALUES(?, ?)', (txid, nout))
