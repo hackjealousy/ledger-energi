@@ -51,7 +51,7 @@ def is_locked_txid(txid, nout):
         return len(cur.fetchall()) > 0
 
 def lock_txid(txid, nout):
-    if islocked_txid(txid, nout):
+    if is_locked_txid(txid, nout):
         return
 
     if not isinstance(nout, int):
