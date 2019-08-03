@@ -15,8 +15,13 @@ def get_address_at(index):
     return ae
 
 def get_next_unused():
+    al = walletdb.get_addresses_db()
+    maxi = 0
+    for a in al:
+        if int(a['index']) > maxi:
+            maxi = int(a['index'])
     sys.stdout.write('Getting address from ledger...  '); sys.stdout.flush()
-    addr_e = address.get_next_unused()[0]
+    addr_e = address.get_next_unused(index = maxi)[0]
     addr = addr_e['address']
     path = addr_e['path']
     print('\nAddress: %s (path: %s)' % (serialize.b2s(addr), path))

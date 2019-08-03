@@ -122,7 +122,7 @@ def put_unspent_db(address, txid, nout, script, satoshis):
 def remove_unspent_db(txid, nout):
     with db_get_con() as con:
         cur = con.cursor()
-        cur.execute('DELETE FROM wallet WHERE txid = ? AND nout = ?', (txid, nout))
+        cur.execute('DELETE FROM unspent WHERE txid = ? AND nout = ?', (txid, nout))
         con.commit()
 
 def get_all_unspent():

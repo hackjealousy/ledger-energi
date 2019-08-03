@@ -84,28 +84,43 @@ def call_get_trusted_input_first(ninput, bs):
     P1_FIRST = '00'
 
     data = struct.pack('>I', ninput) + bs
+    if len(data) > 255:
+        raise RuntimeError('message too long')
+
     apdu = 'CLA|INS_GET_TRUSTED_INPUT|%s|00|%2.2x|%s' % (P1_FIRST, len(data), b2hs(data))
     return call(apdu)
 
 def call_get_trusted_input_next(bs):
+    if len(bs) > 255:
+        raise RuntimeError('message too long')
+
     P1_NEXT = '80'
 
     apdu = 'CLA|INS_GET_TRUSTED_INPUT|%s|00|%2.2x|%s' % (P1_NEXT, len(bs), b2hs(bs))
     return call(apdu)
 
 def call_hash_input_start_first(bs):
+    if len(bs) > 255:
+        raise RuntimeError('message too long')
+
     P1_FIRST = '00'
     P2_NEW = '00'
     apdu = 'CLA|INS_HASH_INPUT_START|%s|%s|%2.2x|%s' % (P1_FIRST, P2_NEW, len(bs), b2hs(bs))
     return call(apdu)
 
 def call_hash_input_start_next(bs):
+    if len(bs) > 255:
+        raise RuntimeError('message too long')
+
     P1_NEXT = '80'
     P2_CONTINUE = '80'
     apdu = 'CLA|INS_HASH_INPUT_START|%s|%s|%2.2x|%s' % (P1_NEXT, P2_CONTINUE, len(bs), b2hs(bs))
     return call(apdu)
 
 def call_hash_input_finalize_full(bs):
+    if len(bs) > 255:
+        raise RuntimeError('message too long')
+
     P1_MORE = '00'
     P1_LAST = '80'
     P1_CHANGEINFO = 'ff'
@@ -115,6 +130,9 @@ def call_hash_input_finalize_full(bs):
     return call(apdu)
 
 def call_hash_input_finalize_full_last(bs):
+    if len(bs) > 255:
+        raise RuntimeError('message too long')
+
     P1_MORE = '00'
     P1_LAST = '80'
     P1_CHANGEINFO = 'ff'

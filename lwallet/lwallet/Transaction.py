@@ -4,6 +4,7 @@ from io import BytesIO, StringIO
 import random
 import secp256k1
 import struct
+import sys
 
 from coinapi import eelocal as eel
 from lwallet import address, energi, ledger, script, serialize
@@ -234,6 +235,7 @@ def sign_tx(tx_in, address_d, change_path = None, txid_d = None):
     tx = CTransaction(tx_in)
 
     # First, we need a trusted input blob for each vin[i].
+    sys.stdout.write('Loading input transactions (%d)...  ' % len(tx.vin)); sys.stdout.flush()
     til = []
     for i in range(len(tx.vin)):
         d = {}
@@ -290,6 +292,7 @@ def sign_tx(tx_in, address_d, change_path = None, txid_d = None):
     # Second, we need a signature to put in each vin[i].scriptSig.
     sigs = []
     for i in range(len(tx.vin)):
+
         tx_i = CTransaction(tx)
         for v in tx_i.vin:
             v.scriptSig = b''
@@ -332,10 +335,14 @@ def sign_tx(tx_in, address_d, change_path = None, txid_d = None):
             if b'' != r:
                 raise RuntimeError('hash_input_finalize_full_change: %s' % r)
 
+        sys.stdout.write('\nSign input %d: ' % (i + 1)); sys.stdout.flush()
+
         # now the last part of the outputs
         r = ledger.call_hash_input_finalize_full_last(bufl[-1])
         if r != bytearray(b'\x00\x00'):
             raise RuntimeError('hash_input_finalize_full: %s' % r)
+
+        sys.stdout.write('signed'); sys.stdout.flush()
 
         # get the address path for the given hashed pubkey
         addr = energi.address_repr(hpubkey)
@@ -353,13 +360,15 @@ def sign_tx(tx_in, address_d, change_path = None, txid_d = None):
                 raise RuntimeError('address confusion')
         sigs.append({'signature': r, 'pubkey': pubkey})
 
+    sys.stdout.write('\n'); sys.stdout.flush()
+
     # Finally, everything should be signed.  Construct scriptSig for each vin
     for i in range(len(tx.vin)):
         tx.vin[i].scriptSig = script.standard_scriptsig(sigs[i]['signature'], sigs[i]['pubkey'])
 
     return tx
 
-def create_tx(address_to, value_sats, addr_d, fee_minimum = 0):
+def create_tx(address_to, value_sats, addr_d, fee_minimum = 0, used_inputs = []):
     # fee_minimum is in Sats
     _NRGSAT = 10**8
 
@@ -383,6 +392,7 @@ def create_tx(address_to, value_sats, addr_d, fee_minimum = 0):
     ul = []
     for u in utxol:
         ul.append(u)
+        used_inputs.append(u)
         amt += u['satoshis']
         if amt >= send_amt + fee_amt: # assuming 1kB tx
             break
@@ -416,8 +426,12 @@ def create_tx(address_to, value_sats, addr_d, fee_minimum = 0):
 
     txs = sign_tx(tx, address_d = addr_d, change_path = change_path)
 
+    print('Transaction signed.  Verifying.')
+
     if not verify_tx(txs):
         raise RuntimeError('transaction did not verify')
+
+    print('Verified.')
 
     return txs.serialize()
 
