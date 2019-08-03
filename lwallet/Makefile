@@ -5,3 +5,4 @@ install: all
 
 clean:
 	cat files.txt | xargs rm -f
+	rm -rf build
