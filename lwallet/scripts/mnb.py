@@ -18,7 +18,7 @@ def parse_conf(fn):
     confl = [l for l in confl.splitlines() if not l.strip().startswith('#')]
     r = []
     for l in confl:
-        mne = l.split(' ')
+        mne = l.split()
         if len(mne) != 5:
             raise RuntimeError('bad conf line: %s' % l)
         r.append({'alias': mne[0], 'ip': mne[1], 'mn_privkey': mne[2], 'txid': mne[3], 'nout': int(mne[4])})

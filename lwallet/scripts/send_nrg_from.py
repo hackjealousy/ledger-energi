@@ -62,7 +62,7 @@ def main():
 
     print('Creating transaction.')
     used_inputs = []
-    tx = Transaction.create_tx(to, val, addr_d, fee_minimum = 6 * 1027, used_inputs = used_inputs)
+    tx = Transaction.create_tx(to, val, addr_d, fee_minimum = 1 * 1027, used_inputs = used_inputs)
     print('\n\nTransaction: (%d) %s' % (len(tx), serialize.b2hs(tx)))
 
     sys.stdout.write('\nVerifying transaction with energid... '); sys.stdout.flush()

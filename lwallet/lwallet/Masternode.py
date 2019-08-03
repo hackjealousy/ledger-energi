@@ -1,4 +1,5 @@
 import base58
+import hashlib
 import io
 import secp256k1
 import socket
@@ -14,6 +15,34 @@ _PROTOCOL_VERSION = 70212
 
 def get_block_hash(n = 12):
     return serialize.hs2b(eel.get_blockhash(eel.get_blockcount() - n))
+
+#----#----#----#----#----#----#----#----#----#----#----#----#----#----#----#
+
+def b2hs(b):
+    return ''.join(['%2.2x' % c for c in b])
+
+def sha256(s):
+    return hashlib.new('sha256', s).digest()
+
+def hash256(s):
+    return sha256(sha256(s))
+
+def generate_privkey():
+    with open('/dev/urandom', 'rb') as f:
+        pkr = bytes([106]) + f.read(32)
+    pkr += hash256(pkr)[:4]
+    return base58.b58encode(pkr)
+
+def decode_privkey(eb):
+    b = base58.b58decode(eb)
+    if len(b) < 4:
+        raise RuntimeError('short privkey')
+
+    t_crc = hash256(b[:-4])
+    if b[-4:] != t_crc[:4]:
+        raise RuntimeError('crc failed')
+
+    return b[1:-4], b[0]
 
 #----#----#----#----#----#----#----#----#----#----#----#----#----#----#----#
 
