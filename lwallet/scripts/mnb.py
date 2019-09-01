@@ -42,7 +42,7 @@ def create_mnb(mne):
 
     mnp = Masternode.CMasternodePing(collat_outpoint)
     mn_privkey = energi.decode_address(mne['mn_privkey'])
-    block_hash = Masternode.get_block_hash()
+    block_hash = Masternode.get_block_hash(13)
     mnp.sign(block_hash, mn_privkey)
 
     mnb = Masternode.CMasternodeBroadcast()

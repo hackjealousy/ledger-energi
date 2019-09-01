@@ -4,7 +4,7 @@ import io
 import sys
 
 from coinapi import eelocal as eel
-from lwallet import address, energi, serialize, walletdb, Transaction
+from lwallet import address, energi, serialize, Transaction, walletdb
 
 _NRGSAT = 10**8
 
@@ -29,17 +29,25 @@ def balance(addr_d):
 def s2b(s):
     return bytes([ord(c) for c in s])
 
+def pretty_print(o):
+    import pprint
+    pp = pprint.PrettyPrinter()
+    pp.pprint(o)
+
 def main():
-    if len(sys.argv) != 4:
-        print('usage: %s <from> <to> <send value sats; negative to send everything>' % basename(sys.argv[0]))
+    if len(sys.argv) < 4:
+        print('usage: %s <to> <send value sats; negative to send everything> <txid:nout> [txid:nout [...]]' % basename(sys.argv[0]))
         sys.exit(0)
 
-    fr = s2b(sys.argv[1])
-    to = sys.argv[2]
-    val = int(sys.argv[3])
+    to = sys.argv[1]
+    val = int(sys.argv[2])
+    utxol = [{'txid': y[0], 'nout': int(y[1])} for y in [x.split(':') for x in sys.argv[3:]]]
+
+    if len(utxol) < 1:
+        raise RuntimeError('must include at least 1 utxo')
 
     if not energi.check_address(to):
-        raise RuntimeError('bad to address: %s' % to)
+        raise RuntimeError('bad address "%s"' % to)
 
     if val < 0:
         val = None
@@ -48,24 +56,43 @@ def main():
         print('Sending %f NRG to %s.' % (val / _NRGSAT, to))
 
     addr_d = walletdb.get_address_d(with_change = True)
-    addr_d = {fr: addr_d[fr], 'change': addr_d['change']}
+    print('Searching for utxo%s in walletdb...' % ('s' if len(utxol) > 1 else ''))
+    for addr in addr_d:
+        if 'utxos' in addr_d[addr]:
+            nutxos = []
+            for u in addr_d[addr]['utxos']:
+                for iu in utxol:
+                    if u['txid'] == iu['txid'] and u['nout'] == iu['nout']:
+                        nutxos.append(u)
+                        break
+            addr_d[addr]['utxos'] = nutxos
 
     bal = balance(addr_d)
     print('\nCurrent balance: %f NRG. (%d Sat)' % (bal / _NRGSAT, bal))
 
+    print('Unlocking given inputs: %s' % utxol)
+    input('Press <enter> to unlock, ^C to cancel')
+    for addr in addr_d:
+        if 'utxos' in addr_d[addr]:
+            for u in addr_d[addr]['utxos']:
+                print('unlocking: %s:%d' % (u['txid'], u['nout']))
+                walletdb.unlock_txid(u['txid'], u['nout'])
+
     print('Removing locked outputs.')
+    count = 0
     for a in addr_d.keys():
         nul = []
         for u in addr_d[a].get('utxos', []):
             if not walletdb.is_locked_txid(u['txid'], u['nout']):
                 nul.append(u)
+                count += 1
         addr_d[a]['utxos'] = nul
     bal = balance(addr_d)
     print('\nAvailable balance: %f NRG. (%d Sat)' % (bal / _NRGSAT, bal))
 
     print('Creating transaction.')
     used_inputs = []
-    tx = Transaction.create_tx(to, val, addr_d, fee_minimum = 1 * 1027, used_inputs = used_inputs)
+    tx = Transaction.create_tx(to, val, addr_d, fee_minimum = 4096, used_inputs = used_inputs)
     print('\n\nTransaction: (%d) %s' % (len(tx), serialize.b2hs(tx)))
 
     sys.stdout.write('\nVerifying transaction with energid... '); sys.stdout.flush()

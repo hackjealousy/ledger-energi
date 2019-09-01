@@ -4,7 +4,7 @@ import io
 import sys
 
 from coinapi import eelocal as eel
-from lwallet import address, serialize, walletdb, Transaction
+from lwallet import address, energi, serialize, walletdb, Transaction
 
 _NRGSAT = 10**8
 
@@ -38,6 +38,9 @@ def main():
     to = sys.argv[2]
     val = int(sys.argv[3])
     max_in = int(sys.argv[4])
+
+    if not energi.check_address(to):
+        raise RuntimeError('bad to address: %s' % to)
 
     if val < 0:
         val = None

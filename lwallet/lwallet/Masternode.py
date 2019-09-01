@@ -96,8 +96,8 @@ class CMasternodePing:
         self.sig_time = -1
         self.vchSig = b''
         self.fSentinelIsCurrent = True
-        self.nSentinelVersion = 0x010001
-        self.nDaemonVersion = 120200
+        self.nSentinelVersion = 0x010101
+        self.nDaemonVersion = 2020100
 
     def serialize(self, SER_GETHASH = False):
         r = self.mn_outpoint.serialize()
