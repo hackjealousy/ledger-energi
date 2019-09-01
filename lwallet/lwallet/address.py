@@ -127,7 +127,7 @@ def get_all_used_addresses(threshold = 1, account = 0, verbose = False, index = 
             find_change = True
 
         if find_change:
-            addresses += get_all_used_change(index, threshold, account)
+            addresses += get_all_used_change(index, threshold, account, verbose)
 
         missing += 1
         index += 1
