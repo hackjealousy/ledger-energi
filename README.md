@@ -1,4 +1,12 @@
 # ledger-energi
+
+NOTENOTENOTE
+This is for Energi 2.0 and will not work with the latest version.
+
+Note further that this is not official software and, unless you know me personally, you shouldn't be using this.
+
+---
+
 Support for Energi Masternodes on the Ledger Hardware Wallet
 
 This repo consists of two things:
